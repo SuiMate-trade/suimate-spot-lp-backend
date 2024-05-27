@@ -1,6 +1,7 @@
 import { UserType } from '../types/dataTypes/user.js';
 import { db } from '../utils/firebase.js';
 import { customAlphabet } from 'nanoid';
+import axios from 'axios';
 
 export const saveUserController = async (userAddress: `0x${string}`) => {
   const userRef = db.collection('suimate-users').doc(userAddress);
@@ -87,5 +88,25 @@ export const getUserDataController = async (userAddress: `0x${string}`) => {
   }
 
   const userData = userDoc.data() as UserType;
+
+  if (!userData.chatId) {
+    const userDataResponse = await axios.get(
+      `https://userfunctions-ylp2jhbl2q-uc.a.run.app/userData?userAddress=${userAddress}`,
+    );
+
+    if (userDataResponse.data.chatId) {
+      const { chatId, firstName, userName } = userDataResponse.data;
+      await userRef.update({
+        chatId,
+        firstName,
+        userName,
+      });
+
+      userData.chatId = chatId;
+      userData.firstName = firstName;
+      userData.userName = userName;
+    }
+  }
+
   return userData;
 };

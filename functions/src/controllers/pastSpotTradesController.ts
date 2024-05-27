@@ -4,7 +4,11 @@ import { getCoinMetadata } from '../utils/sui.js';
 
 export const getPastSpotTradesController = async (address: string) => {
   try {
-    const spotTradesSnapshot = await rtdb.ref(`swaps/${address}`).once('value');
+    const spotTradesSnapshot = await rtdb
+      .ref(`swaps/${address}`)
+      .orderByChild('timestampMs')
+      .limitToFirst(50)
+      .get();
 
     if (!spotTradesSnapshot.exists()) {
       return [];
