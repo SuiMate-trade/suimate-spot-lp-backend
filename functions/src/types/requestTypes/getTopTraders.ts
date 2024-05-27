@@ -1,12 +1,10 @@
 export type GetTopSpotTradersRequestBody = {
-  endTimestamp: number;
-  orderBy: 'swapVolume' | 'swapsMade' | 'lastTxnTime';
+  orderBy: 'totalVolumeSwapped' | 'totalSwapsMade' | 'lastSwapTimestampMs';
   limit?: number;
   platform?: 'cetus' | 'turbos' | 'kriya';
 };
 
 export type GetTopLPTradersRequestBody = {
-  endTimestamp: number;
   orderBy: 'lpVolume' | 'feesCollectedAmount' | 'lastTxnTime';
   limit?: number;
   platform?: 'cetus' | 'turbos';
