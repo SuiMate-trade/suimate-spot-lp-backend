@@ -1,5 +1,8 @@
+import BigNumber from 'bignumber.js';
+import { TraderType } from '../types/dataTypes/trader.js';
 import { GetTopSpotTradersRequestBody } from '../types/requestTypes/getTopTraders.js';
 import { db } from '../utils/firebase.js';
+import { getCoinPrice } from '../utils/getCoinPrice.js';
 import client from '../utils/sui.js';
 
 export const getTopSpotTradesController = async (
@@ -26,7 +29,7 @@ export const getTopSpotTradesController = async (
 
     const topSpotTradersSnapshot = await topSpotTradersRef.get();
 
-    const data = [];
+    const data: TraderType[] = [];
 
     await Promise.all(
       topSpotTradersSnapshot.docs.map(async (doc) => {
@@ -47,25 +50,47 @@ export const getTopSpotTradesController = async (
                 coinType,
               });
 
+              if (!coinMetadata) {
+                return {
+                  ...balance,
+                };
+              }
+
+              const coinPrice = await getCoinPrice(coinType);
+              const balanceInUsd = BigNumber(balance.totalBalance)
+                .dividedBy(10 ** coinMetadata.decimals)
+                .multipliedBy(coinPrice)
+                .toFixed(2);
+
               return {
                 ...balance,
                 ...coinMetadata,
+                balanceInUsd,
               };
             }),
         );
 
         data.push({
-          ...doc.data(),
+          ...(doc.data() as any),
           address,
           balances: balancesWithMetadata,
         });
       }),
     );
 
-    return topSpotTradersSnapshot.docs.map((doc) => ({
-      ...doc.data(),
-      address: doc.id,
-    }));
+    return data.sort((a, b) => {
+      if (!platform) {
+        return BigNumber(a[orderBy]).gt(b[orderBy]) ? -1 : 1;
+      } else {
+        // @ts-ignore
+        return BigNumber(a.swapData[platform][orderBy]).gt(
+          // @ts-ignore
+          b.swapData[platform][orderBy],
+        )
+          ? -1
+          : 1;
+      }
+    });
   } catch (error: any) {
     throw new Error(error.message);
   }
